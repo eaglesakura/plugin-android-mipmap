@@ -12,7 +12,9 @@ public class AndroidMipmapPlugin implements Plugin<Project> {
         project.extensions.create("mipmap", AndroidMipmapPlugin.DSL);
 
         // 規定のタスクを追加
-        project.task('androidBuildMipmap', type: MipmapGenTaskImpl)
+        def androidBuildMipmap = project.task('androidBuildMipmap', type: MipmapGenTaskImpl)
+        androidBuildMipmap.setDescription("Generate mipmap/drawable resources");
+        androidBuildMipmap.setGroup("Android Resource");
     }
 
     public static class MipmapGenTaskImpl extends MipmapGenTask {
