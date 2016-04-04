@@ -8,9 +8,8 @@ public class MipmapGenTaskTest extends GroovyTestCase {
         def project = ProjectBuilder.builder().build();
         def task = (MipmapGenTask) project.task("testingTask", type: MipmapGenTask);
 
-        task.sources = new File("src/test/assets/mipmap");
+        task.sources = new File("src/test/assets");
         task.output = new File("src/test/gen");
-        task.resType = "mipmap"
         task.toolsPath.convert = "C:\\dev-home\\tools\\imagemagick\\convert.exe"
         task.toolsPath.identify = "C:\\dev-home\\tools\\imagemagick\\identify.exe"
         task.build()
