@@ -12,6 +12,7 @@ public class AndroidMipmapPluginTest extends GroovyTestCase {
         project.mipmap.output = new File("src/test/gen");
         project.mipmap.toolsPath.convert = "C:\\dev-home\\tools\\imagemagick\\convert.exe"
         project.mipmap.toolsPath.identify = "C:\\dev-home\\tools\\imagemagick\\identify.exe"
+        project.mipmap.cleanOldFiles = false;
 
         project.tasks.androidBuildMipmap.execute();
     }

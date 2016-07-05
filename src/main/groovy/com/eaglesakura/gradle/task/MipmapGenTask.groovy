@@ -23,6 +23,8 @@ public class MipmapGenTask extends DefaultTask {
 
     def toolsPath = new ToolsPath();
 
+    boolean cleanOldFiles;
+
     boolean isImage(File file) {
         def EXT_TABLE = [".png", ".jpg", ".jpeg"];
         for (def ext : EXT_TABLE) {
@@ -49,7 +51,11 @@ public class MipmapGenTask extends DefaultTask {
 
     @TaskAction
     void build() {
-        IOUtil.cleanDirectory(output);
+        if (cleanOldFiles) {
+            IOUtil.cleanDirectory(output);
+        } else {
+            Logger.out("Skip CleanDirectory");
+        }
         new File(sources, "drawable").listFiles().each {
             buildDpi(it, "drawable");
         }

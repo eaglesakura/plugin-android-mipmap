@@ -21,6 +21,7 @@ public class AndroidMipmapPlugin implements Plugin<Project> {
             output = project.mipmap.output;
             sources = project.mipmap.sources;
             toolsPath = project.mipmap.toolsPath;
+            cleanOldFiles = project.mipmap.cleanOldFiles;
             super.build()
         }
     }
@@ -29,5 +30,6 @@ public class AndroidMipmapPlugin implements Plugin<Project> {
         File sources;
         File output;
         ToolsPath toolsPath = new ToolsPath();
+        boolean cleanOldFiles = true;
     }
 }
