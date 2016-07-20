@@ -1,7 +1,7 @@
 package com.eaglesakura.gradle.android.mipmap
 
 import com.eaglesakura.tool.log.Logger
-import com.eaglesakura.util.Util
+import com.eaglesakura.util.StringUtil
 
 public class ImageItem {
     final File src;
@@ -66,7 +66,7 @@ public class ImageItem {
             def genDir = new File(dstDirectory, resType + "-" + it.key);
             // 出力先を確保する
             genDir.mkdirs();
-            def genFile = new File(genDir, src.name);
+            def genFile = new File(genDir, toResourceName(src.name));
             if (dpi == it.key) {
                 // コピーする
                 Logger.out("  - Copy File[%s] -> [%s]", src.absolutePath, genFile.absolutePath);
@@ -89,5 +89,15 @@ public class ImageItem {
         }
 
         return true;
+    }
+
+    /**
+     * リソース名として有効な名前に変更する
+     */
+    public static String toResourceName(String origin) {
+        origin = origin.toLowerCase();
+        origin = StringUtil.replaceAllSimple(origin, "-", "_");
+        origin = StringUtil.zenkakuEngToHankakuEng(origin);
+        return origin;
     }
 }
