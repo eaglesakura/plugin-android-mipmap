@@ -1,13 +1,29 @@
 /**
  * 1.0.x  : release
+ * 1.1.x  : bintrayに移行
  */
-def ARTIFACT_VERSION = "1.0"
-def ARTIFACT_NAME = file(".").absoluteFile.name
-def ARTIFACT_INSTALL_TARGET = getArtifactInstallTarget()
+def ARTIFACT_VERSION = "1.1"
+def REPOSITORY_NAME = "maven"
+def BINTRAY_LICENSES = ["MIT"]
+def BINTRAY_LABELS = ["android", "plugin"]
+def BINTRAY_API_KEY = System.env.BINTRAY_API_KEY
+def BINTRAY_GPG_PASS = System.env.BINTRAY_GPG_PASS
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+    }
+}
+
 apply plugin: 'groovy'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
+group = "com.eaglesakura"
+version = ARTIFACT_VERSION + getArtifactVersionSuffix()
 
 // Local or maven
 if (!hasProperty("EGLIBRARY_COMPILE_LOCAL")) {
@@ -15,8 +31,8 @@ if (!hasProperty("EGLIBRARY_COMPILE_LOCAL")) {
 }
 
 repositories {
-    maven { url "http://eaglesakura.github.io/maven/" }
     mavenCentral()
+    maven { url "https://dl.bintray.com/eaglesakura/maven/" }
 }
 
 configurations {
@@ -30,19 +46,13 @@ dependencies {
     groovyDoc 'org.codehaus.groovy:groovy-ant:2.3.3'
 
     if (EGLIBRARY_COMPILE_LOCAL) {
-        compile project(':eglibrary:simple-logger')
-        compile project(':eglibrary:simple-utils')
         compile project(':eglibrary:gradle-plugin-utils')
     } else {
-        compile 'com.eaglesakura:simple-logger:1.1.+'
-        compile 'com.eaglesakura:simple-utils:1.1.+'
-        compile 'com.eaglesakura:gradle-plugin-utils:1.0.+'
+        compile 'com.eaglesakura:gradle-plugin-utils:1.1.404'
     }
     // UnitTest
     testCompile 'junit:junit:4.12'
 }
-
-apply plugin: 'maven'
 
 groovydoc {
     groovyClasspath = configurations.groovyDoc
@@ -62,96 +72,6 @@ artifacts {
     archives groovydocJar
 }
 
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            repository(url: uri(ARTIFACT_INSTALL_TARGET))
-            pom.version = ARTIFACT_VERSION + getArtifactVersionSuffix()
-            pom.groupId = "com.eaglesakura"
-            pom.artifactId = file(".").absoluteFile.name;
-        }
-    }
-}
-
-[uploadArchives.repositories.mavenDeployer]*.pom*.whenConfigured { pom ->
-    pom.project {
-        inceptionYear '2016'
-        packaging 'jar'
-        licenses {
-            license {
-                name 'NYSL'
-                url 'https://raw.githubusercontent.com/eaglesakura/eglibrary/master/LICENSE-NYSL-eng.txt'
-            }
-            license {
-                name 'MIT License'
-                url 'https://raw.githubusercontent.com/eaglesakura/eglibrary/master/LICENSE-MIT.txt'
-            }
-        }
-        dependencies {
-            dependency {
-                groupId 'com.eaglesakura'
-                artifactId = 'simple-logger'
-                version = dependenceisVersion("com.eaglesakura:simple-logger", "1.+")
-                scope = 'compile'
-            }
-
-            dependency {
-                groupId 'com.eaglesakura'
-                artifactId = 'simple-utils'
-                version = dependenceisVersion("com.eaglesakura:simple-utils", "1.+")
-                scope = 'compile'
-            }
-
-            dependency {
-                groupId 'com.eaglesakura'
-                artifactId = 'gradle-plugin-utils'
-                version = dependenceisVersion("com.eaglesakura:gradle-plugin-utils",  "1.+")
-                scope = 'compile'
-            }
-        }
-    }
-}
-
-task uploadGroovydoc << {
-    def src = file("build/docs/groovydoc/");
-    def dst = new File("${ARTIFACT_INSTALL_TARGET.absolutePath}/doc/${ARTIFACT_NAME}/");
-    dst.deleteDir();
-    dst.mkdirs();
-
-    ["/usr/bin/rsync", "-a", src.absolutePath, dst.absolutePath].execute().text;
-}
-
-/**
- * 依存している固定ライブラリバージョンを取得する
- */
-String dependenceisVersion(String libName, String defVersion) {
-    def lines = [];
-    def target = file("dependencies.txt");
-    if (!target.file) {
-        return defVersion;
-    }
-
-    target.text.eachLine {
-        if (!it.contains(libName) || it.contains("(")) {
-            return;
-        }
-
-        def tokens = it.split(" ");
-        if (tokens == null || tokens.length == 0) {
-            return;
-        }
-
-        lines += tokens[tokens.length - 1];
-    }
-    if (lines.empty) {
-        println("${libName} -> ${defVersion}")
-        return defVersion;
-    } else {
-        println("${libName} -> ${lines[0]}")
-        return lines[0];
-    }
-}
-
 /**
  * バージョンを取得する
  * CircleCIの場合、バージョン末尾にビルド番号を付与する
@@ -161,21 +81,40 @@ def getArtifactVersionSuffix() {
         // CircleCIのバージョンが指定されているので、そちらを利用する
         return ".${System.env.CIRCLE_BUILD_NUM}"
     } else {
-        return ".local"
+        return ".snapshot"
     }
 }
 
-/**
- * Mavenの格納先を確定する
- */
-def getArtifactInstallTarget() {
-    if (file("maven").directory) {
-        return file("maven");
-    } else if (System.env.CIRCLE_ARTIFACTS != null) {
-        return file(System.env.CIRCLE_ARTIFACTS);
-    } else if (System.env.MAVEN_LOCAL_REPO != null) {
-        return file(System.env.MAVEN_LOCAL_REPO);
-    } else {
-        return file("ci-release");
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'maven-publish'
+
+publishing {
+    publications {
+        Publication(MavenPublication) {
+            from components.java
+        }
     }
+}
+
+bintray {
+    user = 'eaglesakura'
+    key = BINTRAY_API_KEY
+    pkg {
+        repo = REPOSITORY_NAME
+        name = file(".").absoluteFile.name
+        licenses = BINTRAY_LICENSES
+        labels = BINTRAY_LABELS
+        issueTrackerUrl = "https://github.com/eaglesakura/${file(".").absoluteFile.name}/issues"
+        vcsUrl = "https://github.com/eaglesakura/${file(".").absoluteFile.name}"
+        version {
+            name = project.version
+            released = new Date()
+            gpg {
+                sign = true
+                passphrase = BINTRAY_GPG_PASS
+            }
+        }
+    }
+    publications = ['Publication']
+    configurations = ['archives']
 }
