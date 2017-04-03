@@ -48,7 +48,7 @@ dependencies {
     if (EGLIBRARY_COMPILE_LOCAL) {
         compile project(':eglibrary:gradle-plugin-utils')
     } else {
-        compile 'com.eaglesakura:gradle-plugin-utils:1.1.404'
+        compile 'com.eaglesakura:gradle-plugin-utils:1.1.405'
     }
     // UnitTest
     testCompile 'junit:junit:4.12'
